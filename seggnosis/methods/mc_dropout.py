@@ -12,6 +12,26 @@ from ..utils import as_batch, enable_dropout, mutual_information, softmax_probs
 class MCDropoutWrapper(BaseWrapper):
     """
     Monte Carlo Dropout uncertainty estimation.
+
+    Works on any model that already has Dropout / Dropout2d layers in it
+    (very common in segmentation backbones). No retraining needed: at
+    inference time dropout is switched back on, the same image is pushed
+    through N times, and the spread across those N stochastic predictions
+    becomes the uncertainty signal.
+
+    If the model has no dropout layers, this degrades to N identical
+    passes (uncertainty will be ~0 everywhere) -- use `method="tta"` or
+    `method="ensemble"` instead in that case.
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of stochastic forward passes. 20-30 is a common default.
+    uncertainty : str
+        "entropy" (predictive entropy of the mean prediction),
+        "variance" (mean pixel-wise variance across samples), or
+        "mutual_information" (BALD score; isolates epistemic uncertainty
+        specifically caused by model disagreement, not image ambiguity).
     """
 
     def __init__(

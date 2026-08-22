@@ -13,6 +13,19 @@ class EnsembleWrapper(BaseWrapper):
     """
     Deep ensemble uncertainty estimation.
 
+    Give it a list of independently trained models (same task, different
+    seeds / architectures / folds -- whatever you've got). Disagreement
+    across the ensemble becomes the uncertainty signal. Generally the most
+    reliable uncertainty estimate of the three methods here, at the cost of
+    needing multiple trained models.
+
+    Parameters
+    ----------
+    models : list[torch.nn.Module]
+        At least 2 trained models solving the same segmentation task.
+    uncertainty : str
+        "entropy", "variance", or "mutual_information" -- see mc_dropout.py
+        for definitions.
     """
 
     def __init__(

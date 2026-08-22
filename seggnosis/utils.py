@@ -45,6 +45,25 @@ def pixelwise_entropy(mean_probs: np.ndarray) -> np.ndarray:
     eps = 1e-8
     return -np.sum(mean_probs * np.log(mean_probs + eps), axis=0)
 
+
+def pixelwise_variance(prob_samples: np.ndarray) -> np.ndarray:
+    """
+    Pixel-wise predictive variance across stochastic forward passes.
+
+    Parameters
+    ----------
+    prob_samples : np.ndarray, shape (N, C, H, W)
+        N stochastic softmax outputs (MC dropout samples, ensemble members,
+        or TTA variants).
+
+    Returns
+    -------
+    np.ndarray, shape (H, W)
+        Variance summed across classes, then averaged. Higher = more uncertain.
+    """
+    return prob_samples.var(axis=0).mean(axis=0)
+
+
 def mutual_information(prob_samples: np.ndarray) -> np.ndarray:
     """
     Epistemic uncertainty via mutual information (BALD score): the gap

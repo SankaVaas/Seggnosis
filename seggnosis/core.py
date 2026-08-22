@@ -1,3 +1,24 @@
+"""
+Core abstractions for seggnosis: a model-agnostic uncertainty & OOD wrapper
+for image segmentation models.
+
+The central idea: you already have a trained segmentation model (any
+architecture, any framework wrapper as long as it's a torch.nn.Module that
+returns logits of shape (B, C, H, W)). You wrap it once, and every prediction
+comes back with a mask AND a trust signal: pixel-wise uncertainty, an overall
+confidence score, and (optionally) a flag for out-of-distribution inputs.
+
+    import seggnosis
+    trusted = seggnosis.wrap(model, method="mc_dropout", n_samples=20)
+    result = trusted.predict(image_tensor)
+
+    result.mask              # (H, W) predicted class per pixel
+    result.probs             # (C, H, W) mean class probabilities
+    result.uncertainty_map   # (H, W) pixel-wise uncertainty, higher = less trust
+    result.confidence        # scalar overall confidence in [0, 1]
+    result.is_ood            # bool, only set if an OOD detector is attached
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field

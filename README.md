@@ -57,6 +57,25 @@ seggnosis.wrap(model, method="tta", uncertainty="mutual_information")
 seggnosis.wrap(model, method="ensemble", models=[model2, model3], uncertainty="variance")
 ```
 
+## 2D images and 3D volumes
+
+All three methods work on both 2D images `(C, H, W)` and 3D volumes
+`(C, D, H, W)` — CT, MRI, or any other volumetric modality — via
+`spatial_dims`:
+
+```python
+trusted = seggnosis.wrap(model, method="mc_dropout", spatial_dims=3)
+result = trusted.predict(ct_volume)          # (C, D, H, W)
+result.mask.shape                            # (D, H, W)
+result.uncertainty_map.mean(axis=(1, 2))     # per-slice uncertainty, e.g. to
+                                              # flag which slices need review
+```
+
+TTA's default flip/rotation transforms act in-plane only (the last two axes),
+leaving the depth axis untouched, since most segmentation models are far
+more sensitive to out-of-plane distortion than in-plane. See
+[`examples/quickstart_3d.py`](examples/quickstart_3d.py).
+
 ## Out-of-distribution detection
 
 ```python
@@ -95,6 +114,11 @@ overlay_uncertainty(image_np, result.uncertainty_map)
 plot_reliability_diagram(calibrated_probs, labels)
 ```//(requires `pip install -e ".[viz]"`)
 
+## Example
+
+See [`examples/quickstart.py`](examples/quickstart.py) for a full runnable
+walkthrough (wrap → predict → attach OOD → calibrate).
+
 ## Design principles
 
 - **No retraining.** Everything wraps an already-trained model.
@@ -105,7 +129,7 @@ plot_reliability_diagram(calibrated_probs, labels)
 ## Roadmap / where contributions are wanted
 
 - [ ] Conformal prediction wrapper (pixel-wise coverage guarantees)
-- [ ] Support for 3D volumes (currently 2D `(C, H, W)`)
+- [x] Support for 3D volumes (`spatial_dims=3`)
 - [ ] Deep ensemble training helper (currently BYO trained models)
 - [ ] `nnU-Net` / `MONAI` integration examples
 - [ ] Batch-level (not just single-image) prediction API

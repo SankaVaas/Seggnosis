@@ -26,6 +26,8 @@ class EnsembleWrapper(BaseWrapper):
     uncertainty : str
         "entropy", "variance", or "mutual_information" -- see mc_dropout.py
         for definitions.
+    spatial_dims : int
+        2 for images (C, H, W), 3 for volumes (C, D, H, W), e.g. CT/MRI.
     """
 
     def __init__(
@@ -34,6 +36,7 @@ class EnsembleWrapper(BaseWrapper):
         models: Optional[List[torch.nn.Module]] = None,
         uncertainty: str = "mutual_information",
         device: Optional[str] = None,
+        spatial_dims: int = 2,
     ):
         # `model` kept as the first positional arg for API symmetry with
         # wrap(model, method="ensemble", models=[m2, m3, ...])
@@ -43,7 +46,7 @@ class EnsembleWrapper(BaseWrapper):
                 "EnsembleWrapper needs at least 2 models. Pass the rest via "
                 "models=[m2, m3, ...] in seggnosis.wrap(model, method='ensemble', models=[...])"
             )
-        super().__init__(all_models[0], device=device)
+        super().__init__(all_models[0], device=device, spatial_dims=spatial_dims)
         self.models = [m.to(self.device).eval() for m in all_models]
         if uncertainty not in ("entropy", "variance", "mutual_information"):
             raise ValueError(
@@ -53,7 +56,7 @@ class EnsembleWrapper(BaseWrapper):
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> Result:
-        x = as_batch(x).to(self.device)
+        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
         samples = []
         for m in self.models:
             logits = m(x)

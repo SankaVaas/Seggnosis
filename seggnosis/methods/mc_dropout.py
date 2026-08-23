@@ -32,6 +32,8 @@ class MCDropoutWrapper(BaseWrapper):
         "variance" (mean pixel-wise variance across samples), or
         "mutual_information" (BALD score; isolates epistemic uncertainty
         specifically caused by model disagreement, not image ambiguity).
+    spatial_dims : int
+        2 for images (C, H, W), 3 for volumes (C, D, H, W), e.g. CT/MRI.
     """
 
     def __init__(
@@ -40,8 +42,9 @@ class MCDropoutWrapper(BaseWrapper):
         n_samples: int = 20,
         uncertainty: str = "entropy",
         device: Optional[str] = None,
+        spatial_dims: int = 2,
     ):
-        super().__init__(model, device=device)
+        super().__init__(model, device=device, spatial_dims=spatial_dims)
         self.n_samples = n_samples
         if uncertainty not in ("entropy", "variance", "mutual_information"):
             raise ValueError(
@@ -54,7 +57,7 @@ class MCDropoutWrapper(BaseWrapper):
         self.model.eval()          # BatchNorm etc. stay in eval mode...
         enable_dropout(self.model)  # ...only dropout layers go back to train mode
 
-        x = as_batch(x).to(self.device)
+        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
         samples = []
         for _ in range(self.n_samples):
             logits = self.model(x)

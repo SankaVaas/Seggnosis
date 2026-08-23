@@ -38,8 +38,8 @@ class Result:
     confidence: float                # scalar summary in [0, 1], 1 = fully confident
     is_ood: Optional[bool] = None    # set only if an OOD detector was attached
     ood_score: Optional[float] = None
-    raw: dict = field(default_factory=dict)  # method-specific extras (e.g. all samples)
-
+    raw: dict = field(default_factory=dict)  
+    
     def summary(self) -> str:
         flag = ""
         if self.is_ood is not None:

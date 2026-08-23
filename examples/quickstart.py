@@ -10,8 +10,6 @@ import torch.nn as nn
 
 import seggnosis
 
-
-# --- Stand-in for "your already-trained segmentation model" ------------
 class TinyUNetLike(nn.Module):
     def __init__(self, in_channels=3, n_classes=4):
         super().__init__()

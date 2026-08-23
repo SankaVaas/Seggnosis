@@ -1,3 +1,6 @@
+![seggnosis logo](<docs\images\Seggnosis logo.png>)
+
+
 # seggnosis
 
 **Model-agnostic uncertainty quantification & out-of-distribution detection for image segmentation models.**

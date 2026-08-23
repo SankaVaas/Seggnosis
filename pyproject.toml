@@ -9,7 +9,7 @@ description = "Model-agnostic uncertainty quantification and OOD detection for i
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
-authors = [{ name = "Sanka Vaas Samarasingha" }]
+authors = [{ name = "Sanka Vaas" }]
 keywords = [
     "deep-learning", "computer-vision", "medical-imaging", "segmentation",
     "uncertainty-quantification", "out-of-distribution-detection", "pytorch",

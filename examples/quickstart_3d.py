@@ -41,8 +41,6 @@ def main():
     print("  probs shape (C, D, H, W):    ", result.probs.shape)
     print("  uncertainty map shape:       ", result.uncertainty_map.shape)
 
-    # Per-slice mean uncertainty -- useful for flagging which slices of a
-    # scan need a radiologist's closer look.
     per_slice_uncertainty = result.uncertainty_map.mean(axis=(1, 2))
     worst_slice = int(per_slice_uncertainty.argmax())
     print(f"\n  Most uncertain slice: {worst_slice} "

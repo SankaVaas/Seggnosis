@@ -1,5 +1,4 @@
-![seggnosis logo](<docs\images\Seggnosis logo.png>)
-
+![Segnossis Logo](<docs/images/Seggnosis logo.png>)
 
 # seggnosis
 

@@ -53,11 +53,19 @@ class Result:
 class BaseWrapper:
     """Common interface every uncertainty-estimation method implements."""
 
-    def __init__(self, model: torch.nn.Module, device: Optional[str] = None):
+    def __init__(
+        self,
+        model: torch.nn.Module,
+        device: Optional[str] = None,
+        spatial_dims: int = 2,
+    ):
         self.model = model
         self.device = device or next(model.parameters()).device
         self.model.to(self.device)
         self._ood_detector = None
+        if spatial_dims not in (2, 3):
+            raise ValueError("spatial_dims must be 2 (images) or 3 (volumes)")
+        self.spatial_dims = spatial_dims
 
     def attach_ood_detector(self, detector) -> "BaseWrapper":
         """Attach a fitted OOD detector (e.g. seggnosis.ood.MahalanobisOOD)."""
@@ -118,6 +126,8 @@ def wrap(
     **method_kwargs
         Passed through to the chosen method's constructor, e.g.
         n_samples=20 for mc_dropout, or models=[m1, m2, m3] for ensemble.
+        Also accepts spatial_dims=2 (default, images) or spatial_dims=3
+        (volumetric data, e.g. CT/MRI: (C, D, H, W) or (B, C, D, H, W)).
 
     Returns
     -------

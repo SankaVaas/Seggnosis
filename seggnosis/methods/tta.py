@@ -51,9 +51,16 @@ class TTAWrapper(BaseWrapper):
     ----------
     transforms : list of (name, (forward_fn, inverse_fn)), optional
         Defaults to identity + horizontal flip + vertical flip + 90-degree
-        rotation. Custom transforms must be spatially invertible.
+        rotation. Custom transforms must be spatially invertible. The
+        default transforms act on the last two axes only (dims=[-2, -1]),
+        so for volumes (spatial_dims=3) they apply in-plane per slice and
+        leave the depth axis untouched -- this is intentional, since most
+        segmentation models are far more sensitive to out-of-plane rotation
+        artifacts than in-plane ones.
     uncertainty : str
         "entropy", "variance", or "mutual_information".
+    spatial_dims : int
+        2 for images (C, H, W), 3 for volumes (C, D, H, W), e.g. CT/MRI.
     """
 
     def __init__(
@@ -62,8 +69,9 @@ class TTAWrapper(BaseWrapper):
         transforms: Optional[List] = None,
         uncertainty: str = "variance",
         device: Optional[str] = None,
+        spatial_dims: int = 2,
     ):
-        super().__init__(model, device=device)
+        super().__init__(model, device=device, spatial_dims=spatial_dims)
         self.transforms = transforms or DEFAULT_TRANSFORMS
         if uncertainty not in ("entropy", "variance", "mutual_information"):
             raise ValueError(
@@ -74,8 +82,8 @@ class TTAWrapper(BaseWrapper):
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> Result:
         self.model.eval()
-        x = as_batch(x).to(self.device)
-        img = x[0]  # (C, H, W)
+        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
+        img = x[0]  # (C, H, W) or (C, D, H, W)
 
         samples = []
         for _name, (fwd, inv) in self.transforms:

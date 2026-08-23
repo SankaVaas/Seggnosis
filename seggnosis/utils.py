@@ -17,11 +17,32 @@ def enable_dropout(model: nn.Module) -> None:
             module.train()
 
 
-def as_batch(x: torch.Tensor) -> torch.Tensor:
-    """Ensure input is (B, C, H, W); add a batch dim if it's (C, H, W)."""
-    if x.dim() == 3:
+def as_batch(x: torch.Tensor, spatial_dims: int = 2) -> torch.Tensor:
+    """
+    Ensure input has an explicit batch dimension.
+
+    2D: (C, H, W) -> (1, C, H, W); (B, C, H, W) passed through.
+    3D: (C, D, H, W) -> (1, C, D, H, W); (B, C, D, H, W) passed through.
+
+    Batched and unbatched volumes both have 4 total dims as tensors, which is
+    exactly the same rank as an unbatched *2D* image's batched form -- so the
+    two cases can't be told apart from shape alone. `spatial_dims` (set once,
+    when you call `seggnosis.wrap(..., spatial_dims=3)`) resolves the
+    ambiguity explicitly instead of guessing.
+    """
+    if spatial_dims not in (2, 3):
+        raise ValueError("spatial_dims must be 2 or 3")
+    expected_unbatched = spatial_dims + 1   # (C, *spatial)
+    expected_batched = spatial_dims + 2     # (B, C, *spatial)
+    if x.dim() == expected_unbatched:
         return x.unsqueeze(0)
-    return x
+    if x.dim() == expected_batched:
+        return x
+    raise ValueError(
+        f"With spatial_dims={spatial_dims}, expected a tensor of rank "
+        f"{expected_unbatched} (unbatched) or {expected_batched} (batched), "
+        f"got a tensor of rank {x.dim()} with shape {tuple(x.shape)}."
+    )
 
 
 def softmax_probs(logits: torch.Tensor) -> torch.Tensor:

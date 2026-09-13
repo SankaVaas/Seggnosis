@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seggnosis"
-version = "0.2.1"
+version = "0.3.0"
 description = "Model-agnostic uncertainty quantification and OOD detection for image segmentation models."
 readme = "README.md"
 requires-python = ">=3.9"

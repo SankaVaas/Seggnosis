@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from ..core import BaseWrapper, Result
-from ..utils import as_batch, mutual_information, softmax_probs
+from ..utils import as_batch, softmax_probs
 
 
 class EnsembleWrapper(BaseWrapper):
@@ -56,23 +56,26 @@ class EnsembleWrapper(BaseWrapper):
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> Result:
-        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
+        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)  # (B, C, *spatial)
         samples = []
         for m in self.models:
             logits = m(x)
-            probs = softmax_probs(logits)[0].cpu().numpy()
+            probs = softmax_probs(logits).cpu().numpy()  # (B, C, *spatial)
             samples.append(probs)
-        samples = np.stack(samples, axis=0)  # (N, C, H, W)
+        samples = np.stack(samples, axis=0)  # (N, B, C, *spatial)
 
-        mean_probs = samples.mean(axis=0)
+        mean_probs = samples.mean(axis=0)  # (B, C, *spatial)
 
         if self.uncertainty_type == "entropy":
             from ..utils import pixelwise_entropy
-            umap = pixelwise_entropy(mean_probs)
+            umap = pixelwise_entropy(mean_probs, channel_axis=1)
         elif self.uncertainty_type == "variance":
             from ..utils import pixelwise_variance
-            umap = pixelwise_variance(samples)
+            umap = pixelwise_variance(samples, channel_axis=2)
         else:
-            umap = mutual_information(samples)
+            from ..utils import mutual_information
+            umap = mutual_information(samples, channel_axis=2)
 
-        return self._finalize(x, mean_probs, umap, raw={"samples": samples})
+        return self._finalize(
+            x, mean_probs, umap, self.uncertainty_type, raw={"samples": samples}
+        )

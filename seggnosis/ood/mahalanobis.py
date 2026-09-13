@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Union
 
 import numpy as np
 import torch
@@ -32,9 +32,10 @@ class MahalanobisOOD:
     >>> result.is_ood, result.ood_score
     """
 
-    def __init__(self, layer_name: str, threshold: Optional[float] = None):
+    def __init__(self, layer_name: str, threshold: Optional[float] = None, reg: float = 1e-6):
         self.layer_name = layer_name
         self.threshold = threshold  # set by fit() if not given explicitly
+        self.reg = reg
         self._mean: Optional[np.ndarray] = None
         self._inv_cov: Optional[np.ndarray] = None
         self._feature: Optional[torch.Tensor] = None
@@ -85,44 +86,100 @@ class MahalanobisOOD:
             scores, so ~ (100 - percentile)% of clean validation data would
             itself be flagged. 95 is a reasonable default.
         """
+        was_training = model.training
         model.eval()
         device = next(model.parameters()).device
         self._register_hook(model)
 
-        features = []
-        for i, batch in enumerate(in_distribution_data):
-            if max_batches is not None and i >= max_batches:
-                break
-            x = batch[0] if isinstance(batch, (list, tuple)) else batch
-            model(x.to(device))
-            features.append(self._feature.cpu().numpy())
+        try:
+            features = []
+            for i, batch in enumerate(in_distribution_data):
+                if max_batches is not None and i >= max_batches:
+                    break
+                x = batch[0] if isinstance(batch, (list, tuple)) else batch
+                model(x.to(device))
+                features.append(self._feature.cpu().numpy())
+        finally:
+            self._remove_hook()
+            model.train(was_training)
 
-        self._remove_hook()
         features = np.concatenate(features, axis=0)  # (N, D)
+        if features.shape[0] < 2:
+            raise ValueError(
+                "MahalanobisOOD.fit needs at least 2 in-distribution samples "
+                f"to estimate a covariance matrix, got {features.shape[0]}."
+            )
 
         self._mean = features.mean(axis=0)
         cov = np.cov(features, rowvar=False)
-        cov += np.eye(cov.shape[0]) * 1e-6  # regularize for invertibility
-        self._inv_cov = np.linalg.inv(cov)
+        cov = np.atleast_2d(cov)
+        cov = cov + np.eye(cov.shape[0]) * self.reg
+        # pinv rather than a plain inverse: robust even when the feature
+        # dimension approaches or exceeds the number of fitted samples,
+        # where `cov` can be near-singular despite the ridge regularizer.
+        self._inv_cov = np.linalg.pinv(cov)
 
         # Set the threshold from the in-distribution scores themselves
-        train_scores = np.array(
-            [self._mahalanobis(f) for f in features]
-        )
+        train_scores = self._mahalanobis_batch(features)
         self.threshold = float(np.percentile(train_scores, percentile_for_threshold))
         return self
 
-    def _mahalanobis(self, vec: np.ndarray) -> float:
-        diff = vec - self._mean
-        return float(diff @ self._inv_cov @ diff.T)
+    def _mahalanobis_batch(self, vecs: np.ndarray) -> np.ndarray:
+        """Vectorized squared Mahalanobis distance for a batch of feature
+        vectors, shape (N, D) -> (N,)."""
+        diff = vecs - self._mean
+        return np.einsum("ij,jk,ik->i", diff, self._inv_cov, diff)
 
     @torch.no_grad()
-    def score(self, model: nn.Module, x: torch.Tensor) -> float:
-        """Mahalanobis distance of `x`'s features to the in-distribution Gaussian."""
+    def score(self, model: nn.Module, x: torch.Tensor) -> Union[float, np.ndarray]:
+        """
+        Mahalanobis distance of `x`'s features to the in-distribution
+        Gaussian.
+
+        Returns a plain `float` when `x` is a single image (batch size 1,
+        including an unbatched input), or a length-B `np.ndarray` when `x`
+        is a batch of B > 1 images -- one score per image.
+        """
         if self._mean is None:
             raise RuntimeError("Call .fit(model, in_distribution_data) before scoring.")
-        self._register_hook(model)
+        was_training = model.training
         model.eval()
-        model(x)
-        self._remove_hook()
-        return self._mahalanobis(self._feature.cpu().numpy()[0])
+        self._register_hook(model)
+        try:
+            model(x)
+        finally:
+            self._remove_hook()
+            model.train(was_training)
+        scores = self._mahalanobis_batch(self._feature.cpu().numpy())  # (B,)
+        if scores.shape[0] == 1:
+            return float(scores[0])
+        return scores
+
+    def save(self, path: str) -> None:
+        """Save the fitted detector (mean, inverse covariance, threshold,
+        layer name) to a single `.npz` file for later reuse without
+        re-fitting."""
+        if self._mean is None:
+            raise RuntimeError("Nothing to save -- call .fit(...) first.")
+        np.savez(
+            path,
+            mean=self._mean,
+            inv_cov=self._inv_cov,
+            threshold=np.array(self.threshold, dtype=np.float64),
+            reg=np.array(self.reg, dtype=np.float64),
+            layer_name=np.array(self.layer_name),
+        )
+
+    @classmethod
+    def load(cls, path: str) -> "MahalanobisOOD":
+        """Load a detector previously saved with `.save(path)`. Skips
+        `.fit()` entirely -- ready to `.score(model, x)` immediately."""
+        data = np.load(path, allow_pickle=False)
+        detector = cls(
+            layer_name=str(data["layer_name"]),
+            threshold=float(data["threshold"]),
+            reg=float(data["reg"]),
+        )
+        detector._mean = data["mean"]
+        detector._inv_cov = data["inv_cov"]
+        return detector

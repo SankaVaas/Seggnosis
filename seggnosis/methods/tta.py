@@ -6,11 +6,14 @@ import numpy as np
 import torch
 
 from ..core import BaseWrapper, Result
-from ..utils import as_batch, mutual_information, softmax_probs
+from ..utils import as_batch, softmax_probs
 
 
 # Each transform is a (forward, inverse) pair of functions operating on a
-# (C, H, W) tensor, so predictions can be mapped back to the original frame.
+# (B, C, *spatial) tensor, so predictions can be mapped back to the
+# original frame. Flips/rotations act on the last two axes only, which
+# keeps them correct for both (B, C, H, W) images and (B, C, D, H, W)
+# volumes (see the class docstring's `transforms` parameter).
 def _flip_h() -> Tuple[Callable, Callable]:
     f = lambda t: torch.flip(t, dims=[-1])
     return f, f  # flipping twice is the identity
@@ -51,12 +54,13 @@ class TTAWrapper(BaseWrapper):
     ----------
     transforms : list of (name, (forward_fn, inverse_fn)), optional
         Defaults to identity + horizontal flip + vertical flip + 90-degree
-        rotation. Custom transforms must be spatially invertible. The
-        default transforms act on the last two axes only (dims=[-2, -1]),
-        so for volumes (spatial_dims=3) they apply in-plane per slice and
-        leave the depth axis untouched -- this is intentional, since most
-        segmentation models are far more sensitive to out-of-plane rotation
-        artifacts than in-plane ones.
+        rotation. Custom transforms must be spatially invertible and must
+        operate on a (B, C, *spatial) tensor without changing its shape or
+        mixing batch elements. The default transforms act on the last two
+        axes only (dims=[-2, -1]), so for volumes (spatial_dims=3) they
+        apply in-plane per slice and leave the depth axis untouched -- this
+        is intentional, since most segmentation models are far more
+        sensitive to out-of-plane rotation artifacts than in-plane ones.
     uncertainty : str
         "entropy", "variance", or "mutual_information".
     spatial_dims : int
@@ -82,27 +86,29 @@ class TTAWrapper(BaseWrapper):
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> Result:
         self.model.eval()
-        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
-        img = x[0]  # (C, H, W) or (C, D, H, W)
+        x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)  # (B, C, *spatial)
 
         samples = []
         for _name, (fwd, inv) in self.transforms:
-            aug = fwd(img).unsqueeze(0)
+            aug = fwd(x)
             logits = self.model(aug)
-            probs = softmax_probs(logits)[0]  # (C, H, W), still on device
+            probs = softmax_probs(logits)  # (B, C, *spatial), still on device
             probs = inv(probs).cpu().numpy()
             samples.append(probs)
-        samples = np.stack(samples, axis=0)  # (N, C, H, W)
+        samples = np.stack(samples, axis=0)  # (N, B, C, *spatial)
 
-        mean_probs = samples.mean(axis=0)
+        mean_probs = samples.mean(axis=0)  # (B, C, *spatial)
 
         if self.uncertainty_type == "entropy":
             from ..utils import pixelwise_entropy
-            umap = pixelwise_entropy(mean_probs)
+            umap = pixelwise_entropy(mean_probs, channel_axis=1)
         elif self.uncertainty_type == "variance":
             from ..utils import pixelwise_variance
-            umap = pixelwise_variance(samples)
+            umap = pixelwise_variance(samples, channel_axis=2)
         else:
-            umap = mutual_information(samples)
+            from ..utils import mutual_information
+            umap = mutual_information(samples, channel_axis=2)
 
-        return self._finalize(x, mean_probs, umap, raw={"samples": samples})
+        return self._finalize(
+            x, mean_probs, umap, self.uncertainty_type, raw={"samples": samples}
+        )

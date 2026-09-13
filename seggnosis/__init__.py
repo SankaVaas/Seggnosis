@@ -13,7 +13,7 @@ from .ood.mahalanobis import MahalanobisOOD
 from .calibration.temperature_scaling import TemperatureScaler
 from .calibration.metrics import expected_calibration_error, reliability_curve
 
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 __all__ = [
     "wrap",

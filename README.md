@@ -107,6 +107,34 @@ calibrated_probs = scaler.apply(logits)
 ece = seggnosis.expected_calibration_error(calibrated_probs, labels)
 ```
 
+## Batches
+
+Every method accepts a real batch, `(B, C, H, W)` (or `(B, C, D, H, W)` for
+volumes) with `B > 1` -- each field on `Result` gains a leading batch axis:
+
+```python
+result = trusted.predict(batch_of_images)   # (B, C, H, W)
+result.mask.shape           # (B, H, W)
+result.confidence           # np.ndarray, shape (B,)
+result.is_ood                # np.ndarray of bool, shape (B,), if a detector is attached
+```
+
+A single unbatched image, or a batch of exactly 1, still returns the plain
+per-image shapes and scalar types shown throughout this README.
+
+## Saving a fitted OOD detector or calibrator
+
+`MahalanobisOOD` and `TemperatureScaler` don't need the fitting data around
+at inference time -- fit once, save, and load into a serving process:
+
+```python
+detector.save("ood_detector.npz")
+detector = seggnosis.MahalanobisOOD.load("ood_detector.npz")
+
+scaler.save("temperature.json")
+scaler = seggnosis.TemperatureScaler.load("temperature.json")
+```
+
 ## Visualization
 
 ```python

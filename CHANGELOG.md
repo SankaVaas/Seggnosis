@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.4.0
+
+### Added
+- **Split conformal prediction**, a fourth `method=` option:
+  `seggnosis.wrap(model, method="conformal", alpha=0.1)`. Unlike the
+  heuristic entropy/variance/mutual-information scores from the other three
+  methods, conformal prediction is calibrated on a held-out labeled set
+  (`.calibrate(loader)`) and gives each pixel a *prediction set* of classes
+  with a distribution-free, finite-sample coverage guarantee: the true
+  class lands in the set at least `1 - alpha` of the time, pooled across
+  calibration and test pixels, independent of whether the underlying model
+  is well-calibrated or even accurate. See `ConformalWrapper`'s docstring
+  for the exact scope of the guarantee (pooled-pixel, not per-image).
+  Needs only a single deterministic model -- no dropout or ensemble.
+- `normalization_constant()` in `seggnosis.utils` gained a `"set_size"`
+  uncertainty type so conformal prediction-set size feeds into the same
+  `Result.confidence` machinery as the other three methods.
+
 ## 0.3.0
 
 ### Fixed

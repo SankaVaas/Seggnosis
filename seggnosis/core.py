@@ -181,7 +181,7 @@ def wrap(
         A trained segmentation model. forward(x) must return logits of
         shape (B, C, H, W) (or (C, H, W) for a single image).
     method : str
-        One of "mc_dropout", "tta", "ensemble".
+        One of "mc_dropout", "tta", "ensemble", "conformal".
     device : str, optional
         Torch device to run on. Defaults to the model's current device.
     **method_kwargs
@@ -207,7 +207,10 @@ def wrap(
     elif method == "ensemble":
         from .methods.ensemble import EnsembleWrapper
         return EnsembleWrapper(model, device=device, **method_kwargs)
+    elif method == "conformal":
+        from .methods.conformal import ConformalWrapper
+        return ConformalWrapper(model, device=device, **method_kwargs)
     else:
         raise ValueError(
-            f"Unknown method '{method}'. Choose from: mc_dropout, tta, ensemble."
+            f"Unknown method '{method}'. Choose from: mc_dropout, tta, ensemble, conformal."
         )

@@ -143,13 +143,20 @@ def normalization_constant(uncertainty_type: str, n_classes: int) -> float:
       (as an earlier version of this function did) silently compresses it
       towards 0 and makes `Result.confidence` overstate confidence for
       variance-based uncertainty.
+    - "set_size" (conformal prediction set size, see
+      `seggnosis.methods.conformal`) is a pixel's conformal prediction-set
+      size minus 1, bounded above by n_classes - 1 (an empty-but-for-one
+      set scores 0; a set containing every class scores n_classes - 1).
     """
     if uncertainty_type in ("entropy", "mutual_information"):
         return float(np.log(n_classes) + 1e-8)
     if uncertainty_type == "variance":
         return 0.25
+    if uncertainty_type == "set_size":
+        return float(max(n_classes - 1, 1))
     raise ValueError(
-        "uncertainty_type must be 'entropy', 'variance', or 'mutual_information'"
+        "uncertainty_type must be 'entropy', 'variance', 'mutual_information', "
+        "or 'set_size'"
     )
 
 

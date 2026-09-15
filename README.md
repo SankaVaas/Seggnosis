@@ -59,6 +59,29 @@ seggnosis.wrap(model, method="tta", uncertainty="mutual_information")
 seggnosis.wrap(model, method="ensemble", models=[model2, model3], uncertainty="variance")
 ```
 
+## Conformal prediction (guaranteed coverage)
+
+The three methods above give you a *heuristic* uncertainty score. `conformal`
+is different: calibrated on a held-out labeled set, it gives each pixel a
+**prediction set** of classes with a distribution-free, finite-sample
+coverage guarantee — the true class lands in the set at least `1 - alpha` of
+the time, on average across calibration + test pixels, regardless of whether
+the model itself is well-calibrated or even accurate.
+
+```python
+trusted = seggnosis.wrap(model, method="conformal", alpha=0.1)  # target ~90% coverage
+trusted.calibrate(held_out_labeled_loader)   # required once, before predict()
+
+result = trusted.predict(image)
+result.raw["prediction_set"]   # (C, H, W) bool — which classes are plausible per pixel
+result.uncertainty_map         # per-pixel (set size - 1); 0 = a confident singleton set
+```
+
+Needs a single deterministic model (no dropout/ensemble required) and a
+held-out labeled calibration set distinct from training data. See
+`ConformalWrapper`'s docstring for the coverage guarantee's exact scope —
+it's pooled across pixels, not a per-image guarantee.
+
 ## 2D images and 3D volumes
 
 All three methods work on both 2D images `(C, H, W)` and 3D volumes
@@ -158,11 +181,11 @@ walkthrough (wrap → predict → attach OOD → calibrate).
 
 ## Roadmap / where contributions are wanted
 
-- [ ] Conformal prediction wrapper (pixel-wise coverage guarantees)
+- [x] Conformal prediction wrapper (pixel-wise coverage guarantees)
 - [x] Support for 3D volumes (`spatial_dims=3`)
 - [ ] Deep ensemble training helper (currently BYO trained models)
 - [ ] `nnU-Net` / `MONAI` integration examples
-- [ ] Batch-level (not just single-image) prediction API
+- [x] Batch-level (not just single-image) prediction API
 - [ ] PyPI release
 - [ ] Benchmark notebook against public medical segmentation OOD datasets (e.g. OpenMIBOOD)
 

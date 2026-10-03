@@ -246,7 +246,16 @@ def test_temperature_scaler_save_load_roundtrip(tiny_model, tmp_path):
 # ---------------------------------------------------------------------------
 
 def test_ci_workflows_in_correct_directory():
+    # This checks the repo's layout, not the installed library, so it only
+    # makes sense inside an actual git checkout -- e.g. when `tests/` is
+    # copied/run standalone against an installed wheel (as in a clean-room
+    # install test), there's no .github to find at all. Skip rather than
+    # fail in that case instead of asserting something this test was never
+    # meant to check outside a repo checkout.
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if not os.path.isfile(os.path.join(repo_root, "pyproject.toml")):
+        pytest.skip("not running inside a seggnosis repo checkout")
+
     workflows_dir = os.path.join(repo_root, ".github", "workflows")
     assert os.path.isdir(workflows_dir), (
         "GitHub Actions only discovers workflows under .github/workflows/ "

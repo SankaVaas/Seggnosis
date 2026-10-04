@@ -10,16 +10,27 @@ image segmentation models.
 
 from .core import wrap, Result, BaseWrapper
 from .methods.conformal import ConformalWrapper
+from ._classification import classification, ClassificationResult, BaseClassificationWrapper
 from .ood.mahalanobis import MahalanobisOOD
 from .calibration.temperature_scaling import TemperatureScaler
 from .calibration.metrics import expected_calibration_error, reliability_curve
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
+
+# `segmentation` is a plain alias for `wrap` (the original, per-pixel API):
+# now that `classification()` exists for whole-image models, both names say
+# which output shape they're for. `wrap` is kept as-is for backward
+# compatibility -- existing `seggnosis.wrap(...)` calls are unaffected.
+segmentation = wrap
 
 __all__ = [
     "wrap",
+    "segmentation",
+    "classification",
     "Result",
+    "ClassificationResult",
     "BaseWrapper",
+    "BaseClassificationWrapper",
     "ConformalWrapper",
     "MahalanobisOOD",
     "TemperatureScaler",

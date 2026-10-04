@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0
+
+### Added
+- **`seggnosis.classification()`**, a whole-image-classifier counterpart to
+  `seggnosis.wrap()`/`seggnosis.segmentation()`: the same `mc_dropout` /
+  `tta` / `ensemble` uncertainty methods and OOD-detector attachment, for
+  models whose forward pass returns `(B, C)` logits instead of
+  `(B, C, H, W)` per-pixel ones. Returns a `ClassificationResult` with
+  `predicted_class` (`int`), `probs` (`(C,)`), `confidence`, `uncertainty`
+  (scalar, no per-pixel map), `is_ood`, and `ood_score` -- batches gain a
+  leading axis the same way `seggnosis.core.Result` does.
+- **`seggnosis.segmentation`**, a plain alias for `seggnosis.wrap`
+  (`seggnosis.segmentation is seggnosis.wrap`), so the per-pixel and
+  whole-image APIs both have names that say which output shape they're for.
+  `seggnosis.wrap` is unchanged and still works exactly as before.
+
 ## 0.4.0
 
 ### Added

@@ -82,6 +82,33 @@ held-out labeled calibration set distinct from training data. See
 `ConformalWrapper`'s docstring for the coverage guarantee's exact scope —
 it's pooled across pixels, not a per-image guarantee.
 
+## Classification models
+
+Everything above is built for per-pixel segmentation models. If your model is
+a whole-image classifier instead (`forward(x) -> (B, C)` logits, not
+`(B, C, H, W)`), use `seggnosis.classification()` -- the same
+mc_dropout/tta/ensemble methods and OOD-detector attachment, just without a
+spatial mask:
+
+```python
+trusted = seggnosis.classification(model, method="mc_dropout", n_samples=20)
+result = trusted.predict(image)
+
+result.predicted_class   # int
+result.probs             # (C,) mean class probabilities
+result.confidence         # in [0, 1]
+result.uncertainty        # scalar, no per-pixel map here
+result.is_ood             # set if an OOD detector is attached, same as seggnosis.wrap
+```
+
+`seggnosis.segmentation` is a plain alias for `seggnosis.wrap`, so both APIs
+now have names that say which output shape they're for:
+
+```python
+seggnosis.segmentation(model, method="ensemble", models=[m2, m3])  # == seggnosis.wrap(...)
+seggnosis.classification(model, method="ensemble", models=[m2, m3])
+```
+
 ## 2D images and 3D volumes
 
 All three methods work on both 2D images `(C, H, W)` and 3D volumes

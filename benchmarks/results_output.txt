@@ -1,0 +1,55 @@
+
+======================================================================
+Training a real model on the synthetic shapes task
+======================================================================
+Held-out mean IoU: 0.863  (random baseline ~ 0.250)
+
+======================================================================
+1. Uncertainty quality: does it track real pixel-wise error?
+======================================================================
+
+[mc_dropout] overall accuracy: 0.966
+  accuracy by uncertainty quartile (lowest->highest uncertainty): 1.000, 1.000, 0.994, 0.868
+  monotonically decreasing (allowing 2% slack): True
+  correlation(uncertainty, correctness): -0.385  (expect negative)
+
+[tta] overall accuracy: 0.965
+  accuracy by uncertainty quartile (lowest->highest uncertainty): 1.000, 1.000, 0.972, 0.888
+  monotonically decreasing (allowing 2% slack): True
+  correlation(uncertainty, correctness): -0.092  (expect negative)
+
+[ensemble] overall accuracy: 0.966
+  accuracy by uncertainty quartile (lowest->highest uncertainty): 1.000, 0.999, 0.985, 0.879
+  monotonically decreasing (allowing 2% slack): True
+  correlation(uncertainty, correctness): -0.231  (expect negative)
+
+======================================================================
+1b. Entropy vs mutual information: aleatoric vs epistemic
+======================================================================
+On the top-10%-most-ambiguous pixels (by entropy), relative to each measure's own image-wide mean:
+  entropy ratio:            4.93x
+  mutual_information ratio: 6.07x
+  (entropy picking up relatively more there than MI does would support entropy ~ total uncertainty and MI ~ epistemic-only, as designed)
+
+======================================================================
+2. OOD detection: does it actually separate distributions?
+======================================================================
+Mean OOD score -- in-distribution: 33.04, far-OOD (pure noise): 4557.18, near-OOD (heavy noise): 2885.86, near-OOD (color shift): 473.45
+AUROC in-dist vs far-OOD (pure noise):   1.000  (expect close to 1.0)
+AUROC in-dist vs near-OOD (heavy noise): 1.000  (expect > 0.5, likely < far-OOD case)
+AUROC in-dist vs near-OOD (color shift): 1.000  (expect > 0.5)
+
+======================================================================
+3. Calibration: does temperature scaling reduce ECE?
+======================================================================
+Learned temperature: 1.097
+ECE before calibration: 0.0054
+ECE after calibration:  0.0072  (did not improve)
+
+======================================================================
+4. Conformal prediction: coverage on a REAL trained model
+======================================================================
+
+alpha=0.1 (target coverage 90%): empirical coverage = 98.3%, avg prediction-set size = 1.00 / 4 classes
+
+alpha=0.2 (target coverage 80%): empirical coverage = 98.3%, avg prediction-set size = 1.00 / 4 classes

@@ -17,7 +17,12 @@ jobs:
         # 3.14 intentionally excluded: PyTorch does not yet publish stable
         # wheels for it on all platforms (Windows in particular). Add it
         # back once torch's release matrix catches up.
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
+        #
+        # 3.9 included because pyproject.toml declares requires-python =
+        # ">=3.9" -- that claim needs to actually be tested, not just
+        # asserted. If 3.9 support is ever intentionally dropped, bump the
+        # floor in pyproject.toml in the same change that removes it here.
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -38,9 +43,11 @@ jobs:
         run: |
           python examples/quickstart.py
           python examples/quickstart_3d.py
+          python examples/conformal_prediction.py
+          python examples/classification.py
 
   build:
-    name: Build & validate package metadata
+    name: Build, validate metadata, and test the actual wheel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,3 +64,31 @@ jobs:
 
       - name: Validate metadata (catches things like a bad author field or malformed README before they reach PyPI)
         run: twine check dist/*
+
+      # Everything above only proves the source tree and the package
+      # metadata are each individually fine -- it never proves the wheel
+      # a user actually `pip install`s works, since an editable install
+      # (`pip install -e .`, used by the `test` job above) can hide
+      # packaging mistakes like a file missing from the wheel. Install the
+      # built wheel into a fresh venv with no editable link back to this
+      # checkout, and re-run the suite against *that* install, from a
+      # directory containing only the installed package -- not the repo.
+      - name: Install the built wheel into a clean venv (no editable install)
+        run: |
+          python -m venv /tmp/wheel_venv
+          /tmp/wheel_venv/bin/pip install dist/*.whl pytest
+
+      - name: Run tests against the installed wheel, from outside the repo
+        run: |
+          mkdir -p /tmp/wheel_check
+          cp -r tests examples /tmp/wheel_check/
+          cd /tmp/wheel_check
+          /tmp/wheel_venv/bin/python -m pytest -v
+
+      - name: Run examples against the installed wheel
+        run: |
+          cd /tmp/wheel_check
+          /tmp/wheel_venv/bin/python examples/quickstart.py
+          /tmp/wheel_venv/bin/python examples/quickstart_3d.py
+          /tmp/wheel_venv/bin/python examples/conformal_prediction.py
+          /tmp/wheel_venv/bin/python examples/classification.py

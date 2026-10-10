@@ -25,8 +25,10 @@ import torch
 from .methods.tta import DEFAULT_TRANSFORMS
 from .utils import (
     as_batch,
+    auto_chunk_size,
     chunked_replicated_batches,
     enable_dropout,
+    eval_mode,
     mutual_information,
     normalization_constant,
     pixelwise_entropy,
@@ -217,7 +219,8 @@ class MCDropoutClassifier(BaseClassificationWrapper):
         enable_dropout(self.model)
         try:
             sample_chunks = []
-            for n, replicated in chunked_replicated_batches(x, self.n_samples, self.chunk_size):
+            for n, replicated in chunked_replicated_batches(
+                x, self.n_samples, self.chunk_size or auto_chunk_size(x, self.n_samples)):
                 logits = self.model(replicated)  # (n * B, C)
                 probs = softmax_probs(logits).cpu().numpy()
                 sample_chunks.append(probs.reshape(n, batch_size, probs.shape[-1]))
@@ -258,15 +261,15 @@ class TTAClassifier(BaseClassificationWrapper):
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> ClassificationResult:
-        self.model.eval()
         x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
 
         samples = []
-        for _name, (fwd, _inv) in self.transforms:
-            aug = fwd(x)
-            logits = self.model(aug)
-            probs = softmax_probs(logits).cpu().numpy()  # (B, C)
-            samples.append(probs)
+        with eval_mode(self.model):
+            for _name, (fwd, _inv) in self.transforms:
+                aug = fwd(x)
+                logits = self.model(aug)
+                probs = softmax_probs(logits).cpu().numpy()  # (B, C)
+                samples.append(probs)
         samples = np.stack(samples, axis=0)  # (N, B, C)
 
         mean_probs = samples.mean(axis=0)
@@ -300,7 +303,7 @@ class EnsembleClassifier(BaseClassificationWrapper):
                 "method='ensemble', models=[...])"
             )
         super().__init__(all_models[0], device=device, spatial_dims=spatial_dims)
-        self.models = [m.to(self.device).eval() for m in all_models]
+        self.models = [m.to(self.device) for m in all_models]
         _check_uncertainty_type(uncertainty)
         self.uncertainty_type = uncertainty
 
@@ -308,10 +311,11 @@ class EnsembleClassifier(BaseClassificationWrapper):
     def predict(self, x: torch.Tensor) -> ClassificationResult:
         x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)
         samples = []
-        for m in self.models:
-            logits = m(x)
-            probs = softmax_probs(logits).cpu().numpy()  # (B, C)
-            samples.append(probs)
+        with eval_mode(*self.models):
+            for m in self.models:
+                logits = m(x)
+                probs = softmax_probs(logits).cpu().numpy()  # (B, C)
+                samples.append(probs)
         samples = np.stack(samples, axis=0)  # (N, B, C)
 
         mean_probs = samples.mean(axis=0)

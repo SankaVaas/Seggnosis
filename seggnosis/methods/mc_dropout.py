@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from ..core import BaseWrapper, Result
-from ..utils import as_batch, chunked_replicated_batches, enable_dropout, softmax_probs
+from ..utils import as_batch, auto_chunk_size, chunked_replicated_batches, enable_dropout, softmax_probs
 
 
 class MCDropoutWrapper(BaseWrapper):
@@ -39,15 +39,15 @@ class MCDropoutWrapper(BaseWrapper):
     spatial_dims : int
         2 for images (C, H, W), 3 for volumes (C, D, H, W), e.g. CT/MRI.
     chunk_size : int, optional
-        By default, all `n_samples` stochastic passes are run as ONE
-        batched forward call (the input replicated `n_samples` times along
-        the batch axis) instead of `n_samples` sequential single-pass
-        calls -- generally much faster on a GPU. This uses roughly
-        `n_samples` times the memory of a single forward pass, so for
-        large volumes or large `n_samples` set `chunk_size` to cap how many
-        samples are replicated into any one call (e.g. `chunk_size=5` runs
-        `ceil(n_samples / 5)` batched calls of 5 samples each). Set to `1`
-        to fully recover the original one-sample-per-call behavior.
+        How many of the `n_samples` stochastic passes to run per batched
+        forward call (the input is replicated along the batch axis). Left
+        as None (default) it is chosen automatically from the input size and
+        device: a few copies for small inputs, one at a time for large ones
+        on CPU, many on CUDA (see `seggnosis.utils.auto_chunk_size`). Set it
+        explicitly to trade speed for memory: `chunk_size=1` is one sample
+        per call (lowest memory); `chunk_size=n_samples` replicates
+        everything into one call (can be much slower on CPU for large
+        inputs, and uses `n_samples` times the memory).
     """
 
     def __init__(
@@ -78,7 +78,8 @@ class MCDropoutWrapper(BaseWrapper):
         enable_dropout(self.model)  # ...only dropout layers go back to train mode
         try:
             sample_chunks = []
-            for n, replicated in chunked_replicated_batches(x, self.n_samples, self.chunk_size):
+            for n, replicated in chunked_replicated_batches(
+                x, self.n_samples, self.chunk_size or auto_chunk_size(x, self.n_samples)):
                 logits = self.model(replicated)  # (n * B, C, *spatial)
                 probs = softmax_probs(logits).cpu().numpy()
                 sample_chunks.append(probs.reshape(n, batch_size, *probs.shape[1:]))

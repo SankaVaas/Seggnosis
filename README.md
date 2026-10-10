@@ -77,6 +77,12 @@ result.raw["prediction_set"]   # (C, H, W) bool — which classes are plausible 
 result.uncertainty_map         # per-pixel (set size - 1); 0 = a confident singleton set
 ```
 
+Choose how sets are shaped with `score="lac" | "aps" | "raps"` (all keep the coverage guarantee).
+`lac` (default) gives the smallest sets but, for a confident model, often a single class everywhere;
+`raps` (e.g. `score="raps", lam=0.01`) was the only score whose set size tracked genuinely ambiguous pixels
+in our validation, while `aps` tends to pad sets. No score can add information an overconfident model's
+probabilities don't contain -- calibrate/train the model sensibly first.
+
 Needs a single deterministic model (no dropout/ensemble required) and a
 held-out labeled calibration set distinct from training data. See
 `ConformalWrapper`'s docstring for the coverage guarantee's exact scope —
@@ -128,6 +134,13 @@ leaving the depth axis untouched, since most segmentation models are far
 more sensitive to out-of-plane distortion than in-plane. See
 [`examples/quickstart_3d.py`](examples/quickstart_3d.py).
 
+## Validation results
+
+`results/REPORT.md` shows what the library does on a controlled task with known ground truth (uncertainty vs.
+real errors, OOD detection vs. shift severity, calibration, conformal coverage, and a clean-install user
+simulation), with figures. Regenerate with `python benchmarks/run_all.py`. These are synthetic-data results --
+check them on your own data before relying on them.
+
 ## Out-of-distribution detection
 
 ```python
@@ -143,6 +156,12 @@ Fits a Gaussian to pooled activations of one layer over in-distribution data
 and flags inputs whose activations are statistically far from it — a
 different scanner, modality, corruption, or simply the wrong kind of image
 being fed to the model.
+
+Practical notes (from `results/REPORT.md`): name a **deep** layer -- in our tests a shallow first
+conv layer reached only 0.55-0.80 AUROC where deeper layers reached ~1.0 -- and fit on at least a few
+hundred normal images. The threshold is cross-fitted (since 0.6.0), so the false-alarm rate on fresh
+normal data stays at or below the nominal ~5%; pass `threshold_method="in_sample"` to `fit` for the
+pre-0.6.0 behaviour.
 
 ## Calibration
 

@@ -1,0 +1,33 @@
+{
+  "temperature": 2.21649432182312,
+  "raw/lac": {
+    "coverage": 0.8984212239583333,
+    "mean_set_size": 1.3712076822916666,
+    "overlap_auroc": 0.575163138735392
+  },
+  "raw/aps": {
+    "coverage": 0.9953776041666667,
+    "mean_set_size": 3.869759114583333,
+    "overlap_auroc": 0.5023196145407776
+  },
+  "raw/raps": {
+    "coverage": 0.8986653645833333,
+    "mean_set_size": 1.5383544921875,
+    "overlap_auroc": 0.5697667677640397
+  },
+  "temperature_scaled/lac": {
+    "coverage": 0.89833984375,
+    "mean_set_size": 1.366552734375,
+    "overlap_auroc": 0.5772185988277653
+  },
+  "temperature_scaled/aps": {
+    "coverage": 0.9506022135416666,
+    "mean_set_size": 2.5785237630208333,
+    "overlap_auroc": 0.5419989870663197
+  },
+  "temperature_scaled/raps": {
+    "coverage": 0.8985432942708333,
+    "mean_set_size": 1.5353271484375,
+    "overlap_auroc": 0.5672765080039185
+  }
+}

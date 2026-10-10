@@ -1,0 +1,467 @@
+{
+  "false_alarm_vs_fit_size": {
+    "fit_sizes": [
+      60,
+      120,
+      300,
+      600
+    ],
+    "in_sample": [
+      0.584,
+      0.256,
+      0.122,
+      0.076
+    ],
+    "cross_fit": [
+      0.014,
+      0.026,
+      0.03,
+      0.044
+    ]
+  },
+  "fpr_in_distribution": {
+    "conv1": 0.04,
+    "conv2": 0.013333333333333334,
+    "conv3": 0.02666666666666667
+  },
+  "sweeps": {
+    "Pixel noise (x std)": {
+      "severities": [
+        1,
+        1.5,
+        2,
+        3,
+        4,
+        6,
+        8
+      ],
+      "control": 1,
+      "results": [
+        {
+          "conv1": {
+            "auroc": 0.4357333333333333,
+            "flag_rate": 0.04
+          },
+          "conv2": {
+            "auroc": 0.4497333333333333,
+            "flag_rate": 0.0
+          },
+          "conv3": {
+            "auroc": 0.45453333333333334,
+            "flag_rate": 0.02
+          },
+          "MSP baseline": {
+            "auroc": 0.5297333333333333
+          },
+          "entropy baseline": {
+            "auroc": 0.5284666666666666
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.5534666666666667,
+            "flag_rate": 0.07
+          },
+          "conv2": {
+            "auroc": 0.9687333333333333,
+            "flag_rate": 0.7
+          },
+          "conv3": {
+            "auroc": 0.907,
+            "flag_rate": 0.5
+          },
+          "MSP baseline": {
+            "auroc": 0.5942666666666667
+          },
+          "entropy baseline": {
+            "auroc": 0.6165333333333334
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.5668,
+            "flag_rate": 0.07
+          },
+          "conv2": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "conv3": {
+            "auroc": 0.998,
+            "flag_rate": 0.99
+          },
+          "MSP baseline": {
+            "auroc": 0.6305333333333333
+          },
+          "entropy baseline": {
+            "auroc": 0.6770666666666667
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.6652666666666667,
+            "flag_rate": 0.1
+          },
+          "conv2": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "conv3": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 0.8588
+          },
+          "entropy baseline": {
+            "auroc": 0.8975333333333333
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.7104666666666667,
+            "flag_rate": 0.16
+          },
+          "conv2": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "conv3": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 0.9834
+          },
+          "entropy baseline": {
+            "auroc": 0.9948
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.9644,
+            "flag_rate": 0.74
+          },
+          "conv2": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "conv3": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 1.0
+          },
+          "entropy baseline": {
+            "auroc": 1.0
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.9947333333333334,
+            "flag_rate": 0.94
+          },
+          "conv2": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "conv3": {
+            "auroc": 1.0,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 1.0
+          },
+          "entropy baseline": {
+            "auroc": 1.0
+          }
+        }
+      ]
+    },
+    "Blur (kernel size)": {
+      "severities": [
+        3,
+        5,
+        7,
+        9,
+        13
+      ],
+      "control": 3,
+      "results": [
+        {
+          "conv1": {
+            "auroc": 0.4357333333333333,
+            "flag_rate": 0.04
+          },
+          "conv2": {
+            "auroc": 0.4497333333333333,
+            "flag_rate": 0.0
+          },
+          "conv3": {
+            "auroc": 0.45453333333333334,
+            "flag_rate": 0.02
+          },
+          "MSP baseline": {
+            "auroc": 0.5297333333333333
+          },
+          "entropy baseline": {
+            "auroc": 0.5284666666666666
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.5826666666666667,
+            "flag_rate": 0.1
+          },
+          "conv2": {
+            "auroc": 0.7316,
+            "flag_rate": 0.13
+          },
+          "conv3": {
+            "auroc": 0.8372,
+            "flag_rate": 0.34
+          },
+          "MSP baseline": {
+            "auroc": 0.7466
+          },
+          "entropy baseline": {
+            "auroc": 0.7568
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.6411333333333333,
+            "flag_rate": 0.11
+          },
+          "conv2": {
+            "auroc": 0.9045333333333333,
+            "flag_rate": 0.44
+          },
+          "conv3": {
+            "auroc": 0.9825333333333334,
+            "flag_rate": 0.92
+          },
+          "MSP baseline": {
+            "auroc": 0.7648
+          },
+          "entropy baseline": {
+            "auroc": 0.7682
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.6474666666666666,
+            "flag_rate": 0.15
+          },
+          "conv2": {
+            "auroc": 0.9731333333333333,
+            "flag_rate": 0.68
+          },
+          "conv3": {
+            "auroc": 0.9971333333333333,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 0.7714666666666666
+          },
+          "entropy baseline": {
+            "auroc": 0.7622666666666666
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.7978,
+            "flag_rate": 0.24
+          },
+          "conv2": {
+            "auroc": 0.9969333333333333,
+            "flag_rate": 0.95
+          },
+          "conv3": {
+            "auroc": 0.9984,
+            "flag_rate": 0.99
+          },
+          "MSP baseline": {
+            "auroc": 0.6276666666666667
+          },
+          "entropy baseline": {
+            "auroc": 0.6002
+          }
+        }
+      ]
+    },
+    "Color inversion (alpha)": {
+      "severities": [
+        0.0,
+        0.25,
+        0.5,
+        0.75,
+        1.0
+      ],
+      "control": 0.0,
+      "results": [
+        {
+          "conv1": {
+            "auroc": 0.4357333333333333,
+            "flag_rate": 0.04
+          },
+          "conv2": {
+            "auroc": 0.4497333333333333,
+            "flag_rate": 0.0
+          },
+          "conv3": {
+            "auroc": 0.45453333333333334,
+            "flag_rate": 0.02
+          },
+          "MSP baseline": {
+            "auroc": 0.5297333333333333
+          },
+          "entropy baseline": {
+            "auroc": 0.5284666666666666
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.4185333333333333,
+            "flag_rate": 0.04
+          },
+          "conv2": {
+            "auroc": 0.9857333333333334,
+            "flag_rate": 0.92
+          },
+          "conv3": {
+            "auroc": 0.9976,
+            "flag_rate": 0.98
+          },
+          "MSP baseline": {
+            "auroc": 0.9479333333333333
+          },
+          "entropy baseline": {
+            "auroc": 0.9329333333333333
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.5008,
+            "flag_rate": 0.12
+          },
+          "conv2": {
+            "auroc": 0.9992,
+            "flag_rate": 0.98
+          },
+          "conv3": {
+            "auroc": 0.9999333333333333,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 0.9924666666666667
+          },
+          "entropy baseline": {
+            "auroc": 0.9808
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.5266666666666666,
+            "flag_rate": 0.24
+          },
+          "conv2": {
+            "auroc": 0.9963333333333333,
+            "flag_rate": 0.97
+          },
+          "conv3": {
+            "auroc": 0.9991333333333333,
+            "flag_rate": 0.99
+          },
+          "MSP baseline": {
+            "auroc": 0.9498
+          },
+          "entropy baseline": {
+            "auroc": 0.9241333333333334
+          }
+        },
+        {
+          "conv1": {
+            "auroc": 0.6483333333333333,
+            "flag_rate": 0.4
+          },
+          "conv2": {
+            "auroc": 0.9988,
+            "flag_rate": 0.99
+          },
+          "conv3": {
+            "auroc": 0.9999333333333333,
+            "flag_rate": 1.0
+          },
+          "MSP baseline": {
+            "auroc": 0.9464
+          },
+          "entropy baseline": {
+            "auroc": 0.8807333333333334
+          }
+        }
+      ]
+    }
+  },
+  "special": {
+    "Novel shapes (ring/cross, new color)": {
+      "conv1": {
+        "auroc": 0.6480666666666667,
+        "flag_rate": 0.15
+      },
+      "conv2": {
+        "auroc": 1.0,
+        "flag_rate": 1.0
+      },
+      "conv3": {
+        "auroc": 1.0,
+        "flag_rate": 1.0
+      },
+      "MSP baseline": {
+        "auroc": 0.9384
+      },
+      "entropy baseline": {
+        "auroc": 0.8618666666666667
+      }
+    },
+    "Pure noise images": {
+      "conv1": {
+        "auroc": 1.0,
+        "flag_rate": 1.0
+      },
+      "conv2": {
+        "auroc": 1.0,
+        "flag_rate": 1.0
+      },
+      "conv3": {
+        "auroc": 1.0,
+        "flag_rate": 1.0
+      },
+      "MSP baseline": {
+        "auroc": 1.0
+      },
+      "entropy baseline": {
+        "auroc": 1.0
+      }
+    }
+  },
+  "end_to_end": {
+    "id_flag_rate": 0.03333333333333333,
+    "ood_flag_rate": 1.0,
+    "batch_is_ood_shape": [
+      60
+    ],
+    "matches_direct_scoring": true
+  },
+  "criteria": {
+    "cross-fit threshold: false-alarm rate <= 7% (nominal 5%) at EVERY fit size from 60 to 600": true,
+    "cross-fit threshold is never worse than the in-sample one": true,
+    "false-positive rate on in-distribution data <= 10% (conv2)": true,
+    "control (no shift) AUROC within 0.4-0.6 for every family (conv2)": true,
+    "AUROC >= 0.9 at strongest shift for every family (conv2)": true,
+    "AUROC >= 0.9 on novel shapes and pure noise (conv2)": true,
+    "result.is_ood end-to-end: flags >= 80% of shifted, <= 15% of normal": true,
+    "is_ood batch output has one flag per image": true
+  }
+}

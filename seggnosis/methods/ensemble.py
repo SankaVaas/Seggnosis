@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from ..core import BaseWrapper, Result
-from ..utils import as_batch, softmax_probs
+from ..utils import as_batch, eval_mode, softmax_probs
 
 
 class EnsembleWrapper(BaseWrapper):
@@ -47,7 +47,7 @@ class EnsembleWrapper(BaseWrapper):
                 "models=[m2, m3, ...] in seggnosis.wrap(model, method='ensemble', models=[...])"
             )
         super().__init__(all_models[0], device=device, spatial_dims=spatial_dims)
-        self.models = [m.to(self.device).eval() for m in all_models]
+        self.models = [m.to(self.device) for m in all_models]
         if uncertainty not in ("entropy", "variance", "mutual_information"):
             raise ValueError(
                 "uncertainty must be 'entropy', 'variance', or 'mutual_information'"
@@ -58,10 +58,11 @@ class EnsembleWrapper(BaseWrapper):
     def predict(self, x: torch.Tensor) -> Result:
         x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)  # (B, C, *spatial)
         samples = []
-        for m in self.models:
-            logits = m(x)
-            probs = softmax_probs(logits).cpu().numpy()  # (B, C, *spatial)
-            samples.append(probs)
+        with eval_mode(*self.models):
+            for m in self.models:
+                logits = m(x)
+                probs = softmax_probs(logits).cpu().numpy()  # (B, C, *spatial)
+                samples.append(probs)
         samples = np.stack(samples, axis=0)  # (N, B, C, *spatial)
 
         mean_probs = samples.mean(axis=0)  # (B, C, *spatial)

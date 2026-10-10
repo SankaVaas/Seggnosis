@@ -1,0 +1,48 @@
+{
+  "results": {
+    "Well-trained model (seg_A), clean data": {
+      "accuracy": 0.9630371332168579,
+      "accuracy_after_scaling": 0.9630371332168579,
+      "mean_confidence_raw": 0.9540656208992004,
+      "mean_confidence_scaled": 0.9562023878097534,
+      "temperature": 0.9727903008460999,
+      "ece_raw": 0.008971480901527702,
+      "ece_scaled": 0.007264918345608755,
+      "nll_raw": 0.12183146178722382,
+      "nll_scaled": 0.12122152000665665,
+      "ece_reduction_pct": 19.022083139343767
+    },
+    "Overconfident model (memorized 32 noisy images), same-distribution data": {
+      "accuracy": 0.8292773365974426,
+      "accuracy_after_scaling": 0.8292773365974426,
+      "mean_confidence_raw": 0.9625040292739868,
+      "mean_confidence_scaled": 0.8996050953865051,
+      "temperature": 2.2237913608551025,
+      "ece_raw": 0.13323478369595254,
+      "ece_scaled": 0.07121152175765018,
+      "nll_raw": 1.3891818523406982,
+      "nll_scaled": 0.7434691786766052,
+      "ece_reduction_pct": 46.55185396618506
+    },
+    "Overconfident model under covariate shift (3x pixel noise)": {
+      "accuracy": 0.6135839819908142,
+      "accuracy_after_scaling": 0.6135839819908142,
+      "mean_confidence_raw": 0.9438323974609375,
+      "mean_confidence_scaled": 0.8735401034355164,
+      "temperature": 2.2237913608551025,
+      "ece_raw": 0.33024837959092107,
+      "ece_scaled": 0.2599705795902991,
+      "nll_raw": 3.398179531097412,
+      "nll_scaled": 1.783681035041809,
+      "ece_reduction_pct": 21.280286094870508
+    }
+  },
+  "criteria": {
+    "overconfident model: scaling cuts ECE by >= 30%": true,
+    "overconfident model: scaling lowers NLL": true,
+    "overconfident model: scaling raises T above 1 (softens confidence)": true,
+    "already-calibrated model: scaling does no harm (ECE rises < 0.005)": true,
+    "scaling never changes accuracy (argmax preserved)": true,
+    "under shift: scaling still reduces ECE": true
+  }
+}

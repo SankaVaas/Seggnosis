@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 from typing import Iterator, Optional, Tuple
 
 import numpy as np
@@ -22,6 +23,22 @@ def enable_dropout(model: nn.Module) -> None:
     for module in model.modules():
         if isinstance(module, (nn.Dropout, nn.Dropout2d, nn.Dropout3d)):
             module.train()
+
+
+@contextlib.contextmanager
+def eval_mode(*models: nn.Module):
+    """Put every given model in eval mode for the duration of the block and
+    restore each one's ORIGINAL train/eval state afterwards, even if the body
+    raises. Every `.predict()` uses this so a wrapped model is never left in a
+    different mode than the user had it in."""
+    states = [m.training for m in models]
+    try:
+        for m in models:
+            m.eval()
+        yield
+    finally:
+        for m, was_training in zip(models, states):
+            m.train(was_training)
 
 
 def as_batch(x: torch.Tensor, spatial_dims: int = 2) -> torch.Tensor:
@@ -160,6 +177,24 @@ def normalization_constant(uncertainty_type: str, n_classes: int) -> float:
     )
 
 
+def auto_chunk_size(x: torch.Tensor, n_samples: int) -> int:
+    """
+    Pick how many stochastic samples to replicate into one forward call.
+
+    Replicating the input N times and running one big batched call is only a
+    win when the hardware can actually use the extra parallelism. Measured on
+    CPU, replicating *everything* at once was up to ~3x SLOWER than one sample
+    at a time for 256x256 inputs (the replicated batch no longer fits in
+    cache), while a few small copies helped on tiny inputs. So the budget is
+    expressed in input elements per call: small on CPU, much larger on CUDA.
+
+    This is a heuristic, not a tuned optimum -- pass `chunk_size=` explicitly
+    to `wrap(..., method="mc_dropout")` to override it.
+    """
+    budget = 2 ** 21 if x.is_cuda else 12288
+    return int(min(n_samples, max(1, budget // max(1, x.numel()))))
+
+
 def chunked_replicated_batches(
     x: torch.Tensor, n_samples: int, chunk_size: Optional[int] = None
 ) -> Iterator[Tuple[int, torch.Tensor]]:
@@ -183,9 +218,9 @@ def chunked_replicated_batches(
         Total number of stochastic samples wanted.
     chunk_size : int, optional
         Max number of samples to replicate into a single forward call. If
-        None, all `n_samples` are replicated into one call -- fastest, but
-        uses `n_samples` times the memory of a single forward pass. Set
-        this to trade speed for memory on large volumes or big `n_samples`.
+        None, all `n_samples` are replicated into one call (uses `n_samples`
+        times the memory of a single forward pass; the MC-dropout wrappers
+        pass `auto_chunk_size(...)` instead of None -- see that function).
 
     Yields
     ------

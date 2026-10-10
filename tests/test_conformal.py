@@ -126,3 +126,83 @@ def test_conformal_restores_model_mode():
     trusted = seggnosis.wrap(model, method="conformal")
     trusted.calibrate(_random_labeled_batches(5, 4, 16, 4, seed=0))
     assert model.training is True
+
+
+# ---------------------------------------------------------------------------
+# APS / RAPS scores
+# ---------------------------------------------------------------------------
+
+def _labels_from_model(model, g, n_batches, batch_size, size):
+    """Labels sampled from the model's own softmax -> a perfectly calibrated
+    model by construction, so any valid conformal method must hit its target
+    coverage on fresh data from the same process."""
+    for _ in range(n_batches):
+        x = torch.rand(batch_size, 3, size, size, generator=g)
+        with torch.no_grad():
+            p = torch.softmax(model(x), dim=1)  # (B, C, H, W)
+        flat = p.permute(0, 2, 3, 1).reshape(-1, p.shape[1])
+        y = torch.multinomial(flat, 1, generator=g).reshape(batch_size, size, size)
+        yield x, y
+
+
+@pytest.mark.parametrize("score", ["lac", "aps", "raps"])
+def test_conformal_scores_hit_target_coverage(score):
+    torch.manual_seed(0)
+    model = TinySegModel(n_classes=4).eval()
+    alpha = 0.1
+    trusted = seggnosis.wrap(model, method="conformal", alpha=alpha, score=score)
+    trusted.calibrate(_labels_from_model(model, torch.Generator().manual_seed(1), 40, 8, 16))
+
+    covered = total = 0
+    for x, y in _labels_from_model(model, torch.Generator().manual_seed(2), 15, 8, 16):
+        ps = trusted.predict(x).raw["prediction_set"]
+        in_set = np.take_along_axis(ps, y.numpy()[:, None, ...], axis=1)[:, 0]
+        covered += int(in_set.sum())
+        total += in_set.size
+    assert covered / total >= (1 - alpha) - 0.02
+
+
+@pytest.mark.parametrize("score", ["aps", "raps"])
+def test_adaptive_scores_basic_properties(score, tiny_model):
+    trusted = seggnosis.wrap(tiny_model, method="conformal", alpha=0.1, score=score)
+    trusted.calibrate(_random_labeled_batches(20, 4, 16, 4, seed=0))
+    torch.manual_seed(0)
+    result = trusted.predict(torch.rand(2, 3, 16, 16))
+    ps = result.raw["prediction_set"]
+    assert ps.shape == (2, 4, 16, 16) and ps.dtype == bool
+    assert result.raw["score"] == score
+    assert np.all(ps.sum(axis=1) >= 1)  # never empty
+    top1 = result.probs.argmax(axis=1)
+    assert np.all(np.take_along_axis(ps, top1[:, None], axis=1))  # top-1 always in
+
+
+def test_aps_sets_are_prefixes_of_the_probability_ranking(tiny_model):
+    trusted = seggnosis.wrap(tiny_model, method="conformal", alpha=0.2, score="aps")
+    trusted.calibrate(_random_labeled_batches(20, 4, 16, 4, seed=0))
+    torch.manual_seed(0)
+    result = trusted.predict(torch.rand(1, 3, 16, 16))
+    probs = result.probs  # (C, H, W)
+    ps = result.raw["prediction_set"][0]
+    # Any class outside the set must have probability <= every class inside it.
+    min_in = np.where(ps, probs, np.inf).min(axis=0)
+    max_out = np.where(~ps, probs, -np.inf).max(axis=0)
+    assert np.all(max_out <= min_in + 1e-7)
+
+
+def test_smaller_alpha_gives_larger_sets_for_every_score(tiny_model):
+    torch.manual_seed(0)
+    image = torch.rand(3, 16, 16)
+    for score in ("lac", "aps", "raps"):
+        sizes = []
+        for alpha in (0.3, 0.05):
+            t = seggnosis.wrap(tiny_model, method="conformal", alpha=alpha, score=score)
+            t.calibrate(_random_labeled_batches(30, 4, 16, 4, seed=1))
+            sizes.append(t.predict(image).raw["prediction_set"].sum(axis=1).mean())
+        assert sizes[1] >= sizes[0]
+
+
+def test_invalid_score_and_regularizer_args(tiny_model):
+    with pytest.raises(ValueError):
+        seggnosis.wrap(tiny_model, method="conformal", score="nope")
+    with pytest.raises(ValueError):
+        seggnosis.wrap(tiny_model, method="conformal", score="raps", lam=-1)

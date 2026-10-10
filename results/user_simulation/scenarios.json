@@ -1,0 +1,114 @@
+{
+  "version": "0.6.0",
+  "location": "/home/claude/seggnosis_work/benchmarks/.cache/user_venv/lib/python3.12/site-packages/seggnosis/__init__.py",
+  "python": "3.12.3",
+  "torch": "2.14.1+cu130",
+  "platform": "linux",
+  "scenarios": [
+    {
+      "id": "S01",
+      "title": "Installation looks like a normal pip install",
+      "expected": "imported from site-packages (not a source checkout); version matches pip metadata; `pip check` clean; import is quick",
+      "observed": "v0.6.0 from /home/claude/seggnosis_work/benchmarks/.cache/user_venv/lib/python3.12/site-packages/seggnosis; pip check clean; cold import incl. torch 2.71s",
+      "status": "PASS"
+    },
+    {
+      "id": "S02",
+      "title": "README quickstart: wrap(...).predict(image)",
+      "expected": "Result has mask/probs/uncertainty_map/confidence with sane shapes, ranges and summary()",
+      "observed": "mask(32, 32) probs(4, 32, 32); confidence=0.923 mean_uncertainty=0.106",
+      "status": "PASS"
+    },
+    {
+      "id": "S03",
+      "title": "Every method x every uncertainty type runs",
+      "expected": "9/9 combinations return finite, in-range results",
+      "observed": "9/9 combinations OK",
+      "status": "PASS"
+    },
+    {
+      "id": "S04",
+      "title": "Batch of images",
+      "expected": "(B,H,W) mask and a length-B confidence array; TTA batch == per-image calls",
+      "observed": "mask(5, 32, 32) confidence(5,); identical to per-image predictions",
+      "status": "PASS"
+    },
+    {
+      "id": "S05",
+      "title": "3-D volumes (spatial_dims=3)",
+      "expected": "all three methods work on (C,D,H,W) and (B,C,D,H,W) volumes",
+      "observed": "mc_dropout, tta, ensemble OK on single and batched volumes",
+      "status": "PASS"
+    },
+    {
+      "id": "S06",
+      "title": "OOD detection through result.is_ood",
+      "expected": "normal images rarely flagged (<=20%), 4x-noise images almost always (>=80%); save/load gives identical scores",
+      "observed": "false alarms 7%, shifted detected 100%; save/load round-trip identical",
+      "status": "PASS"
+    },
+    {
+      "id": "S07",
+      "title": "Temperature scaling on an overconfident model",
+      "expected": "ECE drops by >=30%, accuracy unchanged, save/load round-trips",
+      "observed": "T=2.22; ECE 0.1332 -> 0.0712 (47% lower)",
+      "status": "PASS"
+    },
+    {
+      "id": "S08",
+      "title": "Conformal prediction (LAC / APS / RAPS)",
+      "expected": "coverage >= target - 1pt for all three scores; helpful error if predict() is called before calibrate()",
+      "observed": "lac: cov 0.961, size 1.00; aps: cov 0.996, size 1.78; raps: cov 0.988, size 1.26 | error before calibrate: \"Call .calibrate(calibration_data) before .predict() -- the conformal t...\"",
+      "status": "PASS"
+    },
+    {
+      "id": "S09",
+      "title": "Whole-image classification API",
+      "expected": "classification() works for all methods incl. OOD attachment",
+      "observed": "mc_dropout->class 3; tta->class 3; ensemble->class 3; OOD attached OK",
+      "status": "PASS"
+    },
+    {
+      "id": "S10",
+      "title": "Mistakes produce clear, specific error messages",
+      "expected": "each misuse raises ValueError/RuntimeError with a message (not a cryptic internal error)",
+      "observed": "13/13 misuse cases raise a clear error",
+      "status": "PASS"
+    },
+    {
+      "id": "S11",
+      "title": "The user's model is left untouched by predict()",
+      "expected": "train/eval mode, parameters and gradients unchanged after every method",
+      "observed": "mode, weights and grads unchanged for 4 methods x {eval, train} starting states",
+      "status": "PASS"
+    },
+    {
+      "id": "S12",
+      "title": "Determinism",
+      "expected": "TTA/ensemble reproducible; MC-dropout stochastic but reproducible under a seed",
+      "observed": "tta/ensemble identical across calls; mc_dropout differs between calls, identical with torch.manual_seed",
+      "status": "PASS"
+    },
+    {
+      "id": "S13",
+      "title": "Documentation is present",
+      "expected": "every public name has a docstring",
+      "observed": "all 12 public names documented",
+      "status": "PASS"
+    },
+    {
+      "id": "S14",
+      "title": "Visualization helpers produce figures",
+      "expected": "overlay_uncertainty / plot_mask_comparison / reliability diagram run and save",
+      "observed": "user_mask_comparison.png, user_overlay.png written",
+      "status": "PASS"
+    },
+    {
+      "id": "S15",
+      "title": "Typical latency on CPU (informational)",
+      "expected": "completes; numbers recorded",
+      "observed": "cuda available: False; 32x32 mc_dropout: 9 ms; 32x32 tta: 3 ms; 32x32 ensemble: 2 ms; 64x64 mc_dropout: 37 ms; 64x64 tta: 8 ms; 64x64 ensemble: 6 ms",
+      "status": "PASS"
+    }
+  ]
+}

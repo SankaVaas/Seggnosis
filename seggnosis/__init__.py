@@ -15,7 +15,7 @@ from .ood.mahalanobis import MahalanobisOOD
 from .calibration.temperature_scaling import TemperatureScaler
 from .calibration.metrics import expected_calibration_error, reliability_curve
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 # `segmentation` is a plain alias for `wrap` (the original, per-pixel API):
 # now that `classification()` exists for whole-image models, both names say
@@ -38,3 +38,13 @@ __all__ = [
     "reliability_curve",
     "__version__",
 ]
+
+def __getattr__(name):
+    """Lazily expose `seggnosis.visualize` so `import seggnosis` followed by
+    `seggnosis.visualize.overlay_uncertainty(...)` works, without importing
+    anything matplotlib-related until it is actually used."""
+    if name == "visualize":
+        import importlib
+
+        return importlib.import_module(".visualize", __name__)
+    raise AttributeError(f"module 'seggnosis' has no attribute {name!r}")

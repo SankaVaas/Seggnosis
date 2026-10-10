@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 from ..core import BaseWrapper, Result
-from ..utils import as_batch, softmax_probs
+from ..utils import as_batch, eval_mode, softmax_probs
 
 
 # Each transform is a (forward, inverse) pair of functions operating on a
@@ -85,16 +85,16 @@ class TTAWrapper(BaseWrapper):
 
     @torch.no_grad()
     def predict(self, x: torch.Tensor) -> Result:
-        self.model.eval()
         x = as_batch(x, spatial_dims=self.spatial_dims).to(self.device)  # (B, C, *spatial)
 
         samples = []
-        for _name, (fwd, inv) in self.transforms:
-            aug = fwd(x)
-            logits = self.model(aug)
-            probs = softmax_probs(logits)  # (B, C, *spatial), still on device
-            probs = inv(probs).cpu().numpy()
-            samples.append(probs)
+        with eval_mode(self.model):
+            for _name, (fwd, inv) in self.transforms:
+                aug = fwd(x)
+                logits = self.model(aug)
+                probs = softmax_probs(logits)  # (B, C, *spatial), still on device
+                probs = inv(probs).cpu().numpy()
+                samples.append(probs)
         samples = np.stack(samples, axis=0)  # (N, B, C, *spatial)
 
         mean_probs = samples.mean(axis=0)  # (B, C, *spatial)

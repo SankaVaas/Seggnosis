@@ -1,0 +1,212 @@
+{
+  "results": {
+    "mc_dropout/entropy": {
+      "method": "mc_dropout",
+      "uncertainty": "entropy",
+      "is_default": true,
+      "pixel_accuracy": 0.96414794921875,
+      "error_detection_auroc": 0.9211080324060545,
+      "ambiguity_detection_auroc": 0.907342683396334,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.993603515625,
+        0.86298828125
+      ],
+      "image_conf_vs_acc_spearman": 0.32881194087641447,
+      "acc_top_half_confident_images": 0.9698486328125,
+      "acc_bottom_half_confident_images": 0.958447265625,
+      "confidence_range": [
+        0.801970899105072,
+        0.9557701945304871
+      ]
+    },
+    "mc_dropout/variance": {
+      "method": "mc_dropout",
+      "uncertainty": "variance",
+      "is_default": false,
+      "pixel_accuracy": 0.96427001953125,
+      "error_detection_auroc": 0.8951645116643364,
+      "ambiguity_detection_auroc": 0.87603939504698,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.988720703125,
+        0.868359375
+      ],
+      "image_conf_vs_acc_spearman": 0.19667173294658272,
+      "acc_top_half_confident_images": 0.9720703125,
+      "acc_bottom_half_confident_images": 0.9564697265625,
+      "confidence_range": [
+        0.9920926690101624,
+        0.9995663166046143
+      ]
+    },
+    "mc_dropout/mutual_information": {
+      "method": "mc_dropout",
+      "uncertainty": "mutual_information",
+      "is_default": false,
+      "pixel_accuracy": 0.9642578125,
+      "error_detection_auroc": 0.8672496928685315,
+      "ambiguity_detection_auroc": 0.8500194810836448,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.9765625,
+        0.88046875
+      ],
+      "image_conf_vs_acc_spearman": 0.05899006601086744,
+      "acc_top_half_confident_images": 0.9666015625,
+      "acc_bottom_half_confident_images": 0.9619140625,
+      "confidence_range": [
+        0.987846314907074,
+        0.998728334903717
+      ]
+    },
+    "tta/entropy": {
+      "method": "tta",
+      "uncertainty": "entropy",
+      "is_default": false,
+      "pixel_accuracy": 0.963623046875,
+      "error_detection_auroc": 0.9203691232658224,
+      "ambiguity_detection_auroc": 0.9061869340346974,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.99365234375,
+        0.86083984375
+      ],
+      "image_conf_vs_acc_spearman": 0.28540278938728364,
+      "acc_top_half_confident_images": 0.9705078125,
+      "acc_bottom_half_confident_images": 0.95673828125,
+      "confidence_range": [
+        0.8091441988945007,
+        0.9662242531776428
+      ]
+    },
+    "tta/variance": {
+      "method": "tta",
+      "uncertainty": "variance",
+      "is_default": true,
+      "pixel_accuracy": 0.963623046875,
+      "error_detection_auroc": 0.882780679999932,
+      "ambiguity_detection_auroc": 0.8487506802919548,
+      "quartile_accuracy": [
+        1.0,
+        0.999853515625,
+        0.979052734375,
+        0.8755859375
+      ],
+      "image_conf_vs_acc_spearman": 0.12624779786040902,
+      "acc_top_half_confident_images": 0.9638427734375,
+      "acc_bottom_half_confident_images": 0.9634033203125,
+      "confidence_range": [
+        0.993073046207428,
+        0.9999706745147705
+      ]
+    },
+    "tta/mutual_information": {
+      "method": "tta",
+      "uncertainty": "mutual_information",
+      "is_default": false,
+      "pixel_accuracy": 0.963623046875,
+      "error_detection_auroc": 0.8122665374942825,
+      "ambiguity_detection_auroc": 0.7406268454194267,
+      "quartile_accuracy": [
+        0.998779296875,
+        0.9912109375,
+        0.9646484375,
+        0.899853515625
+      ],
+      "image_conf_vs_acc_spearman": 0.11052690484055497,
+      "acc_top_half_confident_images": 0.9638427734375,
+      "acc_bottom_half_confident_images": 0.9634033203125,
+      "confidence_range": [
+        0.9906380772590637,
+        0.9997907876968384
+      ]
+    },
+    "ensemble/entropy": {
+      "method": "ensemble",
+      "uncertainty": "entropy",
+      "is_default": false,
+      "pixel_accuracy": 0.9674072265625,
+      "error_detection_auroc": 0.9253202140857052,
+      "ambiguity_detection_auroc": 0.9278771388510918,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.996240234375,
+        0.873388671875
+      ],
+      "image_conf_vs_acc_spearman": 0.4268136341669165,
+      "acc_top_half_confident_images": 0.977734375,
+      "acc_bottom_half_confident_images": 0.957080078125,
+      "confidence_range": [
+        0.8384125828742981,
+        0.9641350507736206
+      ]
+    },
+    "ensemble/variance": {
+      "method": "ensemble",
+      "uncertainty": "variance",
+      "is_default": false,
+      "pixel_accuracy": 0.9674072265625,
+      "error_detection_auroc": 0.9189461170382448,
+      "ambiguity_detection_auroc": 0.9239525668075939,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.99501953125,
+        0.874609375
+      ],
+      "image_conf_vs_acc_spearman": 0.529847317747261,
+      "acc_top_half_confident_images": 0.9777099609375,
+      "acc_bottom_half_confident_images": 0.9571044921875,
+      "confidence_range": [
+        0.9936990737915039,
+        0.9997009038925171
+      ]
+    },
+    "ensemble/mutual_information": {
+      "method": "ensemble",
+      "uncertainty": "mutual_information",
+      "is_default": true,
+      "pixel_accuracy": 0.9674072265625,
+      "error_detection_auroc": 0.9101476175285624,
+      "ambiguity_detection_auroc": 0.9157148740057915,
+      "quartile_accuracy": [
+        1.0,
+        1.0,
+        0.99208984375,
+        0.8775390625
+      ],
+      "image_conf_vs_acc_spearman": 0.41567549131287373,
+      "acc_top_half_confident_images": 0.978076171875,
+      "acc_bottom_half_confident_images": 0.95673828125,
+      "confidence_range": [
+        0.9911326766014099,
+        0.998703122138977
+      ]
+    }
+  },
+  "criteria": {
+    "mc_dropout/entropy": {
+      "error_detection_auroc >= 0.75": true,
+      "Q4 accuracy at least 5 points below Q1": true,
+      "confident images more accurate than unconfident": true
+    },
+    "tta/variance": {
+      "error_detection_auroc >= 0.75": true,
+      "Q4 accuracy at least 5 points below Q1": true,
+      "confident images more accurate than unconfident": true
+    },
+    "ensemble/mutual_information": {
+      "error_detection_auroc >= 0.75": true,
+      "Q4 accuracy at least 5 points below Q1": true,
+      "confident images more accurate than unconfident": true
+    }
+  },
+  "n_images": 80,
+  "model_pixel_accuracy_ref": 0.96414794921875
+}

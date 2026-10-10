@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.6.0
+
+> Upgrading from the PyPI release 0.2.x? This release also contains everything in
+> 0.3.0-0.5.0 below (those versions were development milestones, not separate releases).
+
+### Fixed
+- **OOD false alarms were far above the nominal rate.** `MahalanobisOOD.fit` set its
+  threshold from the same images it had fitted the Gaussian on, so scores were biased low.
+  Measured on the benchmark task, with a nominal 5% rate, fresh *normal* images were flagged
+  58% / 26% / 12% / 7.6% of the time when fitted on 60 / 120 / 300 / 600 images. The threshold
+  is now cross-fitted (`threshold_method="cross_fit"`, default): 1.4% / 2.6% / 3.0% / 4.4%.
+  Slightly conservative by design. `threshold_method="in_sample"` restores the old behaviour.
+- **`predict()` no longer changes the train/eval mode of the user's model for ANY method.**
+  TTA, ensemble, conformal (and the classification equivalents) used to leave a model that was
+  in train mode in eval mode; ensembles also called `.eval()` on the user's models at wrap time.
+  All methods now use one `eval_mode` context manager that restores the original mode.
+- **MC-dropout default chunking was slower on CPU for large inputs.** Replicating every sample
+  into one batch was up to 3x slower than one sample at a time at 256x256. `chunk_size=None`
+  now means "automatic" (`seggnosis.utils.auto_chunk_size`: small chunks on CPU, larger on CUDA).
+  Measured against v0.2.1 on CPU: parity (0.97-1.35x). The 0.3.0 note below that the batching
+  is "faster" was an untested assumption; any GPU benefit is still unmeasured.
+- `seggnosis.visualize` can be used as an attribute after `import seggnosis` (lazy import).
+
+### Added
+- **Adaptive conformal scores**: `seggnosis.wrap(model, method="conformal", score="aps" | "raps", lam=..., k_reg=...)`
+  alongside the existing `"lac"` (default, unchanged). On the benchmark task RAPS (lam=0.01) was the only score
+  whose set size tracked genuinely ambiguous pixels (AUROC 0.89) while keeping sets small; LAC returned
+  singletons everywhere and APS padded every set. See `results/REPORT.md`.
+- **Validation suite** in `benchmarks/` and a generated `results/` folder (report, figures, raw data, and a
+  clean-install "user simulation" of 15 scenarios). Regenerate with `python benchmarks/run_all.py`.
+- CI: Python 3.9 added to the matrix (it is declared in `requires-python`), the new examples are smoke-tested,
+  and the *built wheel* is installed into a clean venv and tested.
+
 ## 0.5.0
 
 ### Added

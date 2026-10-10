@@ -1,0 +1,99 @@
+
+=== S01: Installation looks like a normal pip install
+    expected: imported from site-packages (not a source checkout); version matches pip metadata; `pip check` clean; import is quick
+    public API: wrap, segmentation, classification, Result, ClassificationResult, BaseWrapper, BaseClassificationWrapper, ConformalWrapper, MahalanobisOOD, TemperatureScaler, expected_calibration_error, reliability_curve, __version__
+    observed: v0.6.0 from /home/claude/seggnosis_work/benchmarks/.cache/user_venv/lib/python3.12/site-packages/seggnosis; pip check clean; cold import incl. torch 2.71s
+    -> PASS  (3.5s)
+
+=== S02: README quickstart: wrap(...).predict(image)
+    expected: Result has mask/probs/uncertainty_map/confidence with sane shapes, ranges and summary()
+    confidence=0.923 mean_uncertainty=0.106
+    observed: mask(32, 32) probs(4, 32, 32); confidence=0.923 mean_uncertainty=0.106
+    -> PASS  (0.0s)
+
+=== S03: Every method x every uncertainty type runs
+    expected: 9/9 combinations return finite, in-range results
+    observed: 9/9 combinations OK
+    -> PASS  (0.0s)
+
+=== S04: Batch of images
+    expected: (B,H,W) mask and a length-B confidence array; TTA batch == per-image calls
+    observed: mask(5, 32, 32) confidence(5,); identical to per-image predictions
+    -> PASS  (0.0s)
+
+=== S05: 3-D volumes (spatial_dims=3)
+    expected: all three methods work on (C,D,H,W) and (B,C,D,H,W) volumes
+    observed: mc_dropout, tta, ensemble OK on single and batched volumes
+    -> PASS  (0.0s)
+
+=== S06: OOD detection through result.is_ood
+    expected: normal images rarely flagged (<=20%), 4x-noise images almost always (>=80%); save/load gives identical scores
+    observed: false alarms 7%, shifted detected 100%; save/load round-trip identical
+    -> PASS  (0.6s)
+
+=== S07: Temperature scaling on an overconfident model
+    expected: ECE drops by >=30%, accuracy unchanged, save/load round-trips
+    observed: T=2.22; ECE 0.1332 -> 0.0712 (47% lower)
+    -> PASS  (2.6s)
+
+=== S08: Conformal prediction (LAC / APS / RAPS)
+    expected: coverage >= target - 1pt for all three scores; helpful error if predict() is called before calibrate()
+    observed: lac: cov 0.961, size 1.00; aps: cov 0.996, size 1.78; raps: cov 0.988, size 1.26 | error before calibrate: "Call .calibrate(calibration_data) before .predict() -- the conformal t..."
+    -> PASS  (0.6s)
+
+=== S09: Whole-image classification API
+    expected: classification() works for all methods incl. OOD attachment
+    observed: mc_dropout->class 3; tta->class 3; ensemble->class 3; OOD attached OK
+    -> PASS  (0.0s)
+
+=== S10: Mistakes produce clear, specific error messages
+    expected: each misuse raises ValueError/RuntimeError with a message (not a cryptic internal error)
+    predict a 1-D tensor                             -> ValueError: With spatial_dims=2, expected a tensor of rank 3 (unbatched) or 4 (batched), got a tensor of rank 1 with shape
+    predict a 5-D tensor with spatial_dims=2         -> ValueError: With spatial_dims=2, expected a tensor of rank 3 (unbatched) or 4 (batched), got a tensor of rank 5 with shape
+    unknown method name                              -> ValueError: Unknown method 'magic'. Choose from: mc_dropout, tta, ensemble, conformal.
+    ensemble with a single model                     -> ValueError: EnsembleWrapper needs at least 2 models. Pass the rest via models=[m2, m3, ...] in seggnosis.wrap(model, metho
+    unknown uncertainty type                         -> ValueError: uncertainty must be 'entropy', 'variance', or 'mutual_information'
+    OOD detector with a misspelled layer             -> ValueError: Layer 'conv99' not found in model. First few available layers: , conv1, bn1, conv2, bn2, dropout, conv3, bn3, 
+    OOD score before fit()                           -> RuntimeError: Call .fit(model, in_distribution_data) before scoring.
+    conformal alpha out of range                     -> ValueError: alpha must be in (0, 1)
+    conformal unknown score                          -> ValueError: score must be one of ('lac', 'aps', 'raps'), got 'x'
+    TemperatureScaler.apply before fit()             -> RuntimeError: Call .fit(model, calibration_data) first.
+    classification unknown method                    -> ValueError: Unknown method 'nope'. Choose from: mc_dropout, tta, ensemble.
+    float64 image into a float32 model               -> RuntimeError: Input type (double) and bias type (float) should be the same
+    4-channel image into a 3-channel model           -> RuntimeError: Given groups=1, weight of size [24, 3, 3, 3], expected input[3, 4, 32, 32] to have 3 channels, but got 4 chann
+    observed: 13/13 misuse cases raise a clear error
+    -> PASS  (0.0s)
+
+=== S11: The user's model is left untouched by predict()
+    expected: train/eval mode, parameters and gradients unchanged after every method
+    observed: mode, weights and grads unchanged for 4 methods x {eval, train} starting states
+    -> PASS  (0.1s)
+
+=== S12: Determinism
+    expected: TTA/ensemble reproducible; MC-dropout stochastic but reproducible under a seed
+    observed: tta/ensemble identical across calls; mc_dropout differs between calls, identical with torch.manual_seed
+    -> PASS  (0.0s)
+
+=== S13: Documentation is present
+    expected: every public name has a docstring
+    observed: all 12 public names documented
+    -> PASS  (0.0s)
+
+=== S14: Visualization helpers produce figures
+    expected: overlay_uncertainty / plot_mask_comparison / reliability diagram run and save
+    observed: user_mask_comparison.png, user_overlay.png written
+    -> PASS  (0.3s)
+
+=== S15: Typical latency on CPU (informational)
+    expected: completes; numbers recorded
+    32x32 mc_dropout: 9 ms
+    32x32 tta: 3 ms
+    32x32 ensemble: 2 ms
+    64x64 mc_dropout: 37 ms
+    64x64 tta: 8 ms
+    64x64 ensemble: 6 ms
+    observed: cuda available: False; 32x32 mc_dropout: 9 ms; 32x32 tta: 3 ms; 32x32 ensemble: 2 ms; 64x64 mc_dropout: 37 ms; 64x64 tta: 8 ms; 64x64 ensemble: 6 ms
+    -> PASS  (0.5s)
+
+
+SUMMARY: 15/15 scenarios passed  (seggnosis 0.6.0 from /home/claude/seggnosis_work/benchmarks/.cache/user_venv/lib/python3.12/site-packages/seggnosis/__init__.py)

@@ -262,3 +262,100 @@ def test_ci_workflows_in_correct_directory():
         "(plural) -- .github/workflow/ is silently ignored."
     )
     assert os.path.isfile(os.path.join(workflows_dir, "tests.yml"))
+
+
+# ---------------------------------------------------------------------------
+# chunk_size: automatic default + explicit override
+# ---------------------------------------------------------------------------
+
+def test_auto_chunk_size_is_small_for_big_inputs_on_cpu():
+    from seggnosis.utils import auto_chunk_size
+    assert auto_chunk_size(torch.rand(1, 3, 32, 32), 20) == 4     # tiny input: a few copies
+    assert auto_chunk_size(torch.rand(1, 3, 256, 256), 20) == 1   # big input: one at a time
+    assert auto_chunk_size(torch.rand(1, 3, 8, 8), 3) == 3        # never more than n_samples
+
+
+@pytest.mark.parametrize("chunk", [None, 1, 3, 100])
+def test_mc_dropout_chunk_size_variants_all_work(tiny_model, chunk):
+    trusted = seggnosis.wrap(tiny_model, method="mc_dropout", n_samples=7, chunk_size=chunk)
+    r = trusted.predict(torch.rand(2, 3, 16, 16))
+    assert r.raw["samples"].shape[:2] == (7, 2)   # exactly n_samples, regardless of chunking
+
+
+def test_visualize_submodule_reachable_as_attribute():
+    # `import seggnosis; seggnosis.visualize.<fn>` should work without a
+    # separate `import seggnosis.visualize`.
+    import importlib
+    import sys
+    sys.modules.pop("seggnosis.visualize", None)
+    mod = importlib.reload(seggnosis).visualize
+    assert callable(mod.overlay_uncertainty)
+    with pytest.raises(AttributeError):
+        seggnosis.definitely_not_a_thing
+
+
+# ---------------------------------------------------------------------------
+# 0.6.0: predict() must never change the user's model mode -- for EVERY method
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("start_training", [False, True])
+@pytest.mark.parametrize("method", ["mc_dropout", "tta", "ensemble", "conformal"])
+def test_predict_never_changes_model_mode(method, start_training):
+    import copy
+    model, other = TinySegModel(), TinySegModel()
+    model.train(start_training)
+    other.train(start_training)
+    before = copy.deepcopy(model.state_dict())
+
+    kw = {"mc_dropout": {"n_samples": 3}, "ensemble": {"models": [other]}}.get(method, {})
+    trusted = seggnosis.wrap(model, method=method, **kw)
+    if method == "conformal":
+        g = torch.Generator().manual_seed(0)
+        trusted.calibrate([(torch.rand(2, 3, 16, 16, generator=g), torch.randint(0, 4, (2, 16, 16), generator=g))])
+    trusted.predict(torch.rand(3, 16, 16))
+
+    assert model.training is start_training
+    assert model.dropout.training is start_training
+    if method == "ensemble":
+        assert other.training is start_training
+    for k, v in model.state_dict().items():  # weights AND batchnorm running stats untouched
+        assert torch.equal(v, before[k]), k
+    assert all(p.grad is None for p in model.parameters())
+
+
+@pytest.mark.parametrize("method", ["tta", "ensemble"])
+def test_classification_predict_never_changes_model_mode(method):
+    from tests.test_classification import TinyClassifier
+    m, o = TinyClassifier(), TinyClassifier()
+    m.train(); o.train()
+    kw = {"models": [o]} if method == "ensemble" else {}
+    seggnosis.classification(m, method=method, **kw).predict(torch.rand(3, 32, 32))
+    assert m.training is True and o.training is True
+
+
+# ---------------------------------------------------------------------------
+# 0.6.0: OOD threshold honesty (cross-fitted threshold)
+# ---------------------------------------------------------------------------
+
+def _ood_loader(n, seed):
+    g = torch.Generator().manual_seed(seed)
+    return [torch.rand(10, 3, 16, 16, generator=g) for _ in range(n // 10)]
+
+
+def test_ood_cross_fit_threshold_has_lower_false_alarm_rate_than_in_sample():
+    model = TinySegModel().eval()
+    fit_data = _ood_loader(60, seed=1)          # deliberately few fit images
+    held_out = torch.cat(_ood_loader(1500, seed=2))
+    rates = {}
+    for method in ("in_sample", "cross_fit"):
+        det = MahalanobisOOD(layer_name="conv1").fit(model, fit_data, threshold_method=method)
+        rates[method] = float((det.score(model, held_out) > det.threshold).mean())
+    # nominal rate is 5%: in-sample is badly optimistic with 60 images, cross-fit is not
+    assert rates["in_sample"] > 0.08
+    assert rates["cross_fit"] < rates["in_sample"]
+    assert rates["cross_fit"] <= 0.07
+
+
+def test_ood_threshold_method_validation(tiny_model):
+    with pytest.raises(ValueError):
+        MahalanobisOOD(layer_name="conv1").fit(tiny_model, _ood_loader(40, 1), threshold_method="bogus")
